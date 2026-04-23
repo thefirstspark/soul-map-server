@@ -52,11 +52,11 @@ export default async (req, context) => {
 
     // 3. Push to GitHub (soul-maps repo)
     const slug = birthData.fullName.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "");
-    const folderSlug = birthData.fullName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z-]/g, "");
-    const githubResult = await pushToGitHub(html, folderSlug);
+    const filename = `${slug}.html`;
+    const githubResult = await pushToGitHub(html, filename);
 
     // 4. Send confirmation email
-    const liveUrl = `https://soul-maps.thefirstspark.shop/${folderSlug}/`;
+    const liveUrl = `https://soul-maps.thefirstspark.shop/${filename}`;
     await sendConfirmationEmail(birthData, liveUrl);
 
     // 5. Notify Kate
@@ -589,10 +589,10 @@ body {
 // =============================================
 // GITHUB DEPLOYMENT
 // =============================================
-async function pushToGitHub(html, folderSlug) {
+async function pushToGitHub(html, filename) {
   const GITHUB_PAT = process.env.GITHUB_PAT;
   const repo = "thefirstspark/soul-maps";
-  const path = `${folderSlug}/index.html`;
+  const path = filename;
   const content = btoa(unescape(encodeURIComponent(html)));
 
   // Check if file exists first
@@ -610,7 +610,7 @@ async function pushToGitHub(html, folderSlug) {
   }
 
   const body = {
-    message: `✨ Soul Map: ${folderSlug}`,
+    message: `✨ Soul Map: ${filename}`,
     content,
     branch: "master",
   };
