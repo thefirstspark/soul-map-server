@@ -20,31 +20,48 @@ export default async (req, context) => {
   }
 
   try {
-    const body = await req.json();
-    console.log(`[PURCHASE WEBHOOK] Event received:`, body.event);
+    const body = await req.text();
+    const signature = req.headers.get("x-whop-signature");
+
+    // Verify Whop webhook signature
+    const WHOP_SECRET = "ws_bc2ff2f110a80a0a75b943ddacaf827482e8eb2d2300f2aebbeb8174340482fe";
+    if (signature && WHOP_SECRET) {
+      const crypto = await import("crypto");
+      const hmac = crypto.createHmac("sha256", WHOP_SECRET);
+      hmac.update(body);
+      const expectedSignature = hmac.digest("hex");
+
+      if (signature !== expectedSignature) {
+        console.error("[PURCHASE WEBHOOK] Invalid signature");
+        return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 401 });
+      }
+    }
+
+    const data = JSON.parse(body);
+    console.log(`[PURCHASE WEBHOOK] Event received:`, data.event);
 
     // Verify it's a payment.succeeded event
-    if (body.event !== "payment.succeeded") {
+    if (data.event !== "payment.succeeded") {
       return new Response(JSON.stringify({ error: "Not a payment.succeeded event" }), { status: 400 });
     }
 
-    const data = body.data;
+    const paymentData = data.data;
 
     // Detect product type
     const MONTHLY_PLAN_ID = "plan_anQKP3Pzf1cGm";
     const BASIC_PLAN_ID = "plan_Jwc7lAbeFhm7N";
-    const planId = data.plan_id || data.product_id;
+    const planId = paymentData.plan_id || paymentData.product_id;
     const isMonthlyUpdate = planId === MONTHLY_PLAN_ID;
 
     console.log(`[PURCHASE WEBHOOK] Plan: ${planId} (${isMonthlyUpdate ? "Monthly Update" : "Basic Map"})`);
 
     // Extract birth data from Whop payment metadata
     const birthData = {
-      fullName: data.metadata?.full_name || data.customer?.name || "Unknown",
-      birthDate: data.metadata?.birth_date,
-      birthTime: data.metadata?.birth_time || "",
-      birthPlace: data.metadata?.birth_place || "",
-      email: data.customer?.email,
+      fullName: paymentData.metadata?.full_name || paymentData.customer?.name || "Unknown",
+      birthDate: paymentData.metadata?.birth_date,
+      birthTime: paymentData.metadata?.birth_time || "",
+      birthPlace: paymentData.metadata?.birth_place || "",
+      email: paymentData.customer?.email,
     };
 
     if (!birthData.birthDate) {
