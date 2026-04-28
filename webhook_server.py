@@ -44,7 +44,21 @@ from soul_map_generator import generate_soul_map, generate_monthly_update, deplo
 SUBSCRIBERS_FILE = Path(__file__).parent / 'subscribers.json'
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type"]}})
+
+# Add CORS headers to all responses
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
+# Handle preflight requests
+@app.before_request
+def handle_preflight():
+    if request.method == 'OPTIONS':
+        return '', 204
 
 # ============================================================
 # EMAIL CONFIGURATION
