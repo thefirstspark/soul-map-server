@@ -30,7 +30,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -44,14 +43,13 @@ from soul_map_generator import generate_soul_map, generate_monthly_update, deplo
 SUBSCRIBERS_FILE = Path(__file__).parent / 'subscribers.json'
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type"]}})
 
 # Add CORS headers to all responses
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept'
     return response
 
 # Handle preflight requests
